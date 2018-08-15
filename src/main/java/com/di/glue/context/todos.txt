@@ -1,0 +1,4 @@
+
+-> remove name param for SINGLETON binding
+
+-> multithread
