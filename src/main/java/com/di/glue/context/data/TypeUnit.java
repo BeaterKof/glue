@@ -1,13 +1,16 @@
 package com.di.glue.context.data;
 
-import com.di.glue.context.data.BeanType;
-
+import javax.annotation.Nullable;
 import java.util.Objects;
 
 public class TypeUnit {
 
+    // interface to be binded
     private Class clazz;
-    private BeanType beanType;
+    // field used for multiple binding to the same interface
+    // todo multiple binding
+    @Nullable
+    private String bindName;
 
     public Class getClazz() {
         return clazz;
@@ -17,33 +20,32 @@ public class TypeUnit {
         this.clazz = clazz;
     }
 
-    public BeanType getBeanType() {
-        return beanType;
+    public String getBindName() {
+        return bindName;
     }
 
-    public void setBeanType(BeanType beanType) {
-        this.beanType = beanType;
+    public void setBindName(String bindName) {
+        this.bindName = bindName;
     }
 
-    public static final TypeUnit of(Class<?> clazz, BeanType beanType) {
+    public static final TypeUnit of(Class<?> clazz, String beanType) {
         TypeUnit typeUnit = new TypeUnit();
-        typeUnit.setBeanType(beanType);
+        typeUnit.setBindName(beanType);
         typeUnit.setClazz(clazz);
         return typeUnit;
     }
 
     @Override
-    public boolean equals(Object obj) {
-        if(this == obj) return true;
-        if(obj == null || getClass() != obj.getClass()) return false;
-        TypeUnit typeUnit = (TypeUnit) obj;
-        return (this.clazz != null && this.beanType != null &&
-                this.clazz.equals(typeUnit.clazz) && this.beanType.equals(typeUnit.beanType));
-
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        TypeUnit typeUnit = (TypeUnit) o;
+        return Objects.equals(clazz, typeUnit.clazz) &&
+                Objects.equals(bindName, typeUnit.bindName);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(this.clazz, this.beanType);
+        return Objects.hash(clazz, bindName);
     }
 }

@@ -1,7 +1,6 @@
 package com.di.glue;
 
 import com.di.glue.context.GlueApplicationContext;
-import com.di.glue.context.data.BeanType;
 import com.di.glue.context.data.BindingConfigurer;
 import com.di.glue.context.data.DefaultBindingConfigurer;
 import com.di.glue.test_classes.Example;
@@ -21,14 +20,14 @@ public class GlueApplicationTest {
     @Test
     public void bindingConfigurerTest() {
         BindingConfigurer bindingConfigurer = new DefaultBindingConfigurer();
-        bindingConfigurer.addBinding(Simple.class, SimpleImpl_Singleton.class, null, BeanType.SINGLETON);
-        bindingConfigurer.addBinding(Simple.class, SimpleImpl_Singleton.class, null, BeanType.SINGLETON);
-        bindingConfigurer.addBinding(Example.class, ExampleImpl_1.class, "Exaple_prototype_1", BeanType.PROTOTYPE);
-        bindingConfigurer.addBinding(Example.class, ExampleImpl_1.class, "Exaple_prototype_2", BeanType.PROTOTYPE);
-        bindingConfigurer.addBinding(Example.class, ExampleImpl_1.class, "Exaple_prototype_3", BeanType.PROTOTYPE);
+//        bindingConfigurer.addBinding(Simple.class, SimpleImpl_Singleton.class, null);
+        bindingConfigurer.addBinding(Simple.class, SimpleImpl_Singleton.class, null);
+        bindingConfigurer.addBinding(Example.class, ExampleImpl_1.class, "Exaple_prototype_1");
+        bindingConfigurer.addBinding(Example.class, ExampleImpl_1.class, "Exaple_prototype_2");
+        bindingConfigurer.addBinding(Example.class, ExampleImpl_1.class, "Exaple_prototype_3");
 
         // add PROTOTYPE instance of a type already binded to a SINGLETON instance.
-        bindingConfigurer.addBinding(Simple.class, SimpleImpl_Singleton.class, "Simple_prototype_1", BeanType.PROTOTYPE);
+        bindingConfigurer.addBinding(Simple.class, SimpleImpl_Singleton.class, "Simple_prototype_1");
 
         appContext = new GlueApplicationContext(bindingConfigurer);
         appContext.printBindings();

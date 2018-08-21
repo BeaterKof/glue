@@ -2,3 +2,5 @@
 -> remove name param for SINGLETON binding
 
 -> multithread
+
+-> check if classes only have one constructor annotated with @Inject

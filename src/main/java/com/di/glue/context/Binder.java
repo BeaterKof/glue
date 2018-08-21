@@ -7,8 +7,10 @@ import java.util.List;
 
 public interface Binder {
 
-    void bind(TypeUnit typeUnit, String name, Class<?> impl);
+    void bind(TypeUnit typeUnit, ImplUnit name);
 
-    List<MultiMapEntry<TypeUnit, String, Object>> getBindings();
+    List<MultiMapEntry<TypeUnit, ImplUnit, Object>> getBindings();
+
+    void createDependecies();
 
 }

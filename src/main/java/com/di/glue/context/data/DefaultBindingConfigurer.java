@@ -1,7 +1,5 @@
 package com.di.glue.context.data;
 
-import com.di.glue.context.BindingMapper;
-
 import java.util.ArrayList;
 import java.util.List;
 
@@ -14,8 +12,13 @@ public class DefaultBindingConfigurer implements BindingConfigurer{
     }
 
     //TODO: method chaining
-    public void addBinding(Class<?> clazz, Class<?> clazz2, String name, BeanType beanType) {
+    public void addBinding(Class<?> clazz, Class<?> clazz2, java.lang.String name, String beanType) {
         bindings.add(BindingUnit.of(clazz, clazz2, name, beanType));
+    }
+
+    @Override
+    public void addBinding(Class<?> clazz, Class<?> clazz2, String name) {
+        bindings.add(BindingUnit.of(clazz, clazz2, name, null));
     }
 
     public List<BindingUnit> getBindings() {

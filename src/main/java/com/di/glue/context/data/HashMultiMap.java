@@ -2,10 +2,7 @@ package com.di.glue.context.data;
 
 import com.di.glue.context.exception.DuplicateEntryException;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.stream.Collectors;
 
 /**
@@ -34,11 +31,11 @@ public class HashMultiMap<K, C, V> implements MultiMap<K, C, V> {
     }
 
     @Override
-    public void put(K key, C subKey, V value) {
+    public void put(K key, C subKey, V value) throws DuplicateEntryException {
         Map<C, V> subMap;
         if(map.containsKey(key)) {
             if(map.get(key).containsKey(subKey)) {
-                throw new DuplicateEntryException(key.toString(), value.toString());
+                throw new DuplicateEntryException(key, subKey, value);
             }
             subMap = map.get(key);
             subMap.put(subKey, value);
@@ -50,13 +47,13 @@ public class HashMultiMap<K, C, V> implements MultiMap<K, C, V> {
     }
 
     @Override
-    public void removeKeyset(K key) {
+    public void removeKey(K key) {
         map.remove(key);
     }
 
     @Override
-    public boolean removeValue(K key, V value) {
-        return map.get(key).values().remove(value);
+    public void removeSubKey(K key, C subKey) {
+        map.get(key).remove(subKey);
     }
 
     @Override
@@ -73,5 +70,16 @@ public class HashMultiMap<K, C, V> implements MultiMap<K, C, V> {
             }
         }
         return list;
+    }
+
+    @Override
+    public Set<MultiMapEntry<K, C, V>> entrySet() {
+        Set<MultiMapEntry<K, C, V>> set = new HashSet<>();
+        for(Map.Entry<K, Map<C, V>> mapEntry : map.entrySet()) {
+            for(Map.Entry<C, V> subMapEntry : mapEntry.getValue().entrySet()) {
+                set.add(new MultiMapEntry(mapEntry.getKey(), subMapEntry.getKey(), subMapEntry.getValue()));
+            }
+        }
+        return set;
     }
 }

@@ -3,6 +3,7 @@ package com.di.glue.context.data;
 import com.di.glue.context.exception.DuplicateEntryException;
 
 import java.util.List;
+import java.util.Set;
 
 public interface MultiMap<K, C, V> {
 
@@ -17,13 +18,15 @@ public interface MultiMap<K, C, V> {
      * @param value
      * @throws DuplicateEntryException
      */
-    void put(K key, C subKey, V value);
+    void put(K key, C subKey, V value) throws DuplicateEntryException;
 
-    void removeKeyset(K key);
+    void removeKey(K key);
 
-    boolean removeValue(K key, V value);
+    void removeSubKey(K key, C subKey);
 
     boolean containsKey(K key);
 
     List<MultiMapEntry<K, C, V>> getEntries();
+
+    Set<MultiMapEntry<K, C, V>> entrySet();
 }
