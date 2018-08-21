@@ -30,6 +30,6 @@ public class GlueApplicationTest {
         bindingConfigurer.addBinding(Simple.class, SimpleImpl_Singleton.class, "Simple_prototype_1");
 
         appContext = new GlueApplicationContext(bindingConfigurer);
-        appContext.printBindings();
+        appContext.logBindings();
     }
 }

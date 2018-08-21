@@ -48,4 +48,12 @@ public class TypeUnit {
     public int hashCode() {
         return Objects.hash(clazz, bindName);
     }
+
+    @Override
+    public String toString() {
+        return "TypeUnit{" +
+                "clazz=" + clazz.getSimpleName() +
+                ", bindName='" + bindName + '\'' +
+                '}';
+    }
 }

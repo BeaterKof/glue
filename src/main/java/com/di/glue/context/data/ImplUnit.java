@@ -52,4 +52,12 @@ public class ImplUnit {
     public int hashCode() {
         return Objects.hash(clazz, qualifier);
     }
+
+    @Override
+    public String toString() {
+        return "ImplUnit{" +
+                "clazz=" + clazz.getSimpleName() +
+                ", qualifier='" + qualifier + '\'' +
+                '}';
+    }
 }

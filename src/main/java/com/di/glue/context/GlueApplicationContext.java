@@ -3,12 +3,16 @@ package com.di.glue.context;
 import com.di.glue.context.data.BindingConfigurer;
 import com.di.glue.context.data.ImplUnit;
 import com.di.glue.context.data.TypeUnit;
+import com.di.glue.context.util.LogUtils;
 import javafx.util.Pair;
 import org.apache.log4j.BasicConfigurator;
+import org.apache.log4j.Logger;
 
 import java.util.List;
 
 public class GlueApplicationContext implements ApplicationContext {
+
+    private static final Logger log = Logger.getLogger(GlueApplicationContext.class);
 
     private Binder binder;
 
@@ -46,8 +50,9 @@ public class GlueApplicationContext implements ApplicationContext {
     }
 
     @Override
-    public void printBindings() {
+    public void logBindings() {
+        log.info("\n\nLOGGING BINDINGS:\n");
         this.getBinder().getBindings().stream()
-                .forEach(e -> System.out.println(e.getKey().getClazz().getSimpleName() + " -> (" + e.getSubKey() + " , " + e.getValue() + ")"));
+                .forEach(e -> log.info(LogUtils.getComplexBindingString(e)));
     }
 }

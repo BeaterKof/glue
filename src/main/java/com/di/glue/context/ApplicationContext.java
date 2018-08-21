@@ -12,5 +12,5 @@ public interface ApplicationContext {
 
     void addConfigurer(BindingConfigurer configurer);
 
-    void printBindings();
+    void logBindings();
 }

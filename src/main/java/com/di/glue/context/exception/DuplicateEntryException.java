@@ -9,7 +9,7 @@ public class DuplicateEntryException extends Exception {
     }
 
     public DuplicateEntryException(Object key, Object subKey, Object value) {
-        super(MSG + key + " -> " + subKey + " (" + value + ")");
+        super(MSG + key.toString() + " -> " + subKey.toString() + " (" + value + ")");
     }
 
 }
