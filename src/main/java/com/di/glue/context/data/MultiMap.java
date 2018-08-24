@@ -1,8 +1,10 @@
 package com.di.glue.context.data;
 
 import com.di.glue.context.exception.DuplicateEntryException;
+import com.di.glue.context.exception.NoSuchKeyException;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 public interface MultiMap<K, C, V> {
@@ -19,6 +21,10 @@ public interface MultiMap<K, C, V> {
      * @throws DuplicateEntryException
      */
     void put(K key, C subKey, V value) throws DuplicateEntryException;
+
+    Map<C, V> getSubmap(K key);
+
+    V getValue(K key, C subKey) throws NoSuchKeyException;
 
     void removeKey(K key);
 

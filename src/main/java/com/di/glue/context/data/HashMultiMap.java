@@ -1,6 +1,7 @@
 package com.di.glue.context.data;
 
 import com.di.glue.context.exception.DuplicateEntryException;
+import com.di.glue.context.exception.NoSuchKeyException;
 
 import java.util.*;
 import java.util.stream.Collectors;
@@ -44,6 +45,28 @@ public class HashMultiMap<K, C, V> implements MultiMap<K, C, V> {
             subMap.put(subKey, value);
             map.put(key, new HashMap<>(subMap));
         }
+    }
+
+    @Override
+    public Map<C, V> getSubmap(K key) {
+        if(map.containsKey(key)) {
+            return map.get(key);
+        }
+        return null;
+    }
+
+    public V getValue(K key, C subKey) throws NoSuchKeyException {
+        Map<C,V> submap = getSubmap(key);
+        if(submap != null) {
+            if(submap.containsKey(subKey)){
+                return submap.get(subKey);
+            } else {
+                throw new NoSuchKeyException(subKey);
+            }
+        } else {
+            throw new NoSuchKeyException(key);
+        }
+
     }
 
     @Override

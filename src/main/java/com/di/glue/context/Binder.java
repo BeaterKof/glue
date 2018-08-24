@@ -11,6 +11,6 @@ public interface Binder {
 
     List<MultiMapEntry<TypeUnit, ImplUnit, Object>> getBindings();
 
-    void createDependecies();
+    void init();
 
 }

@@ -12,13 +12,14 @@ public class DefaultBindingConfigurer implements BindingConfigurer{
     }
 
     //TODO: method chaining
-    public void addBinding(Class<?> clazz, Class<?> clazz2, java.lang.String name, String beanType) {
-        bindings.add(BindingUnit.of(clazz, clazz2, name, beanType));
+    @Override
+    public void addBinding(Class<?> clazz, Class<?> clazz2, java.lang.String name, String beanType, Scope scope) {
+        bindings.add(BindingUnit.of(clazz, clazz2, name, beanType, scope));
     }
 
     @Override
-    public void addBinding(Class<?> clazz, Class<?> clazz2, String name) {
-        bindings.add(BindingUnit.of(clazz, clazz2, name, null));
+    public void addBinding(Class<?> clazz, Class<?> clazz2, String name, Scope scope) {
+        bindings.add(BindingUnit.of(clazz, clazz2, name, null, scope));
     }
 
     public List<BindingUnit> getBindings() {

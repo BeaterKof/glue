@@ -24,7 +24,7 @@ public class GlueApplicationContext implements ApplicationContext {
         BasicConfigurator.configure();
         binder = new DefaultBinder();
         addConfigurer(configurer);
-        binder.createDependecies();
+        binder.init();
     }
 
     public void addConfigurer(BindingConfigurer configurer) {
@@ -33,8 +33,14 @@ public class GlueApplicationContext implements ApplicationContext {
         configurer.getBindings()
                 .forEach(item -> {
                     // todo:
-                    binder.bind(TypeUnit.of(item.getAbstraction(), item.getBeanType()), ImplUnit.of(item.getImplementation(), item.getName()));
+                    binder.bind(TypeUnit.of(item.getAbstraction(), item.getBeanType()), ImplUnit.of(item.getImplementation(), item.getName(), item.getScope()));
                 });
+        // wait for bindings to end
+        try {
+            Thread.sleep(1000);
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
     }
 
     public Binder getBinder() {

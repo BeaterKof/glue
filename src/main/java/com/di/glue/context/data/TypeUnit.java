@@ -28,9 +28,9 @@ public class TypeUnit {
         this.bindName = bindName;
     }
 
-    public static final TypeUnit of(Class<?> clazz, String beanType) {
+    public static final TypeUnit of(Class<?> clazz, String bindName) {
         TypeUnit typeUnit = new TypeUnit();
-        typeUnit.setBindName(beanType);
+        typeUnit.setBindName(bindName);
         typeUnit.setClazz(clazz);
         return typeUnit;
     }
