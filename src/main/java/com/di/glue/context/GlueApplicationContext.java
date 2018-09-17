@@ -4,11 +4,8 @@ import com.di.glue.context.data.BindingConfigurer;
 import com.di.glue.context.data.ImplUnit;
 import com.di.glue.context.data.TypeUnit;
 import com.di.glue.context.util.LogUtils;
-import javafx.util.Pair;
 import org.apache.log4j.BasicConfigurator;
 import org.apache.log4j.Logger;
-
-import java.util.List;
 
 public class GlueApplicationContext implements ApplicationContext {
 
@@ -33,7 +30,7 @@ public class GlueApplicationContext implements ApplicationContext {
         configurer.getBindings()
                 .forEach(item -> {
                     // todo:
-                    binder.bind(TypeUnit.of(item.getAbstraction(), item.getBeanType()), ImplUnit.of(item.getImplementation(), item.getName(), item.getScope()));
+                    binder.bind(item.getAbstraction(), item.getImplementation(), item.getScope(), item.getName());
                 });
         // wait for bindings to end
         try {
@@ -51,8 +48,8 @@ public class GlueApplicationContext implements ApplicationContext {
         this.binder = binder;
     }
 
-    public List<Pair<Class<?>, Class<?>>> getBindingsList() {
-        return null;
+    public Object getBean(Class<?> clazz) {
+        return binder.getBean(clazz);
     }
 
     @Override

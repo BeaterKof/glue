@@ -1,73 +1,60 @@
 package com.di.glue.context.data;
 
-import com.sun.istack.internal.Pool;
-
 import java.util.Objects;
 
+/**
+ * created by: andrei
+ * date: 02.09.2018
+ **/
 public class ImplUnit {
+    private Class<?> implClazz;
+    private Object instance;
 
-    // implemente
-    private Class<?> clazz;
-
-    // scope of bean
-    private Scope scope;
-
-    /**
-     * used for named proxies (by qualifier annotation)
-     */
-    private String qualifier;
-
-    private ImplUnit(Class<?> clazz, String qualifier, Scope scope) {
-        this.clazz = clazz;
-        this.qualifier = qualifier;
-        this.scope = scope;
+    private ImplUnit(Class<?> implClazz, Object instance) {
+        this.implClazz = implClazz;
+        this.instance = instance;
     }
 
-    public static final ImplUnit of(Class<?> clazz, String qualifier, Scope scope) {
-        return new ImplUnit(clazz, qualifier, scope);
+    public Class<?> getImplClazz() {
+        return implClazz;
     }
 
-    public Class<?> getClazz() {
-        return clazz;
+    public void setImplClazz(Class<?> implClazz) {
+        this.implClazz = implClazz;
     }
 
-    public void setClazz(Class<?> clazz) {
-        this.clazz = clazz;
+    public Object getInstance() {
+        return instance;
     }
 
-    public String getQualifier() {
-        return qualifier;
+    public void setInstance(Object instance) {
+        this.instance = instance;
     }
 
-    public void setQualifier(String qualifier) {
-        this.qualifier = qualifier;
+    public static ImplUnit of(Class<?> implClazz, Object instance) {
+        return new ImplUnit(implClazz, instance);
     }
-
-    public Scope getScope() { return scope; }
-
-    public void setScope(Scope scope) { this.scope = scope; }
 
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
         ImplUnit implUnit = (ImplUnit) o;
-        return Objects.equals(clazz, implUnit.clazz) &&
-                scope == implUnit.scope &&
-                Objects.equals(qualifier, implUnit.qualifier);
+        return Objects.equals(implClazz, implUnit.implClazz) &&
+                Objects.equals(instance, implUnit.instance);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(clazz, scope, qualifier);
+
+        return Objects.hash(implClazz, instance);
     }
 
     @Override
     public String toString() {
         return "ImplUnit{" +
-                "clazz=" + clazz +
-                ", scope=" + scope +
-                ", qualifier='" + qualifier + '\'' +
+                "implClazz=" + implClazz +
+                ", instance=" + instance +
                 '}';
     }
 }

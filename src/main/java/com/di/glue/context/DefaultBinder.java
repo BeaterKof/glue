@@ -1,16 +1,21 @@
 package com.di.glue.context;
 
-import com.di.glue.context.annotation.GlueBean;
 import com.di.glue.context.annotation.Inject;
 import com.di.glue.context.data.*;
 import com.di.glue.context.exception.DuplicateEntryException;
+import com.di.glue.context.exception.MultipleConstructorsWithInjectException;
+import com.di.glue.context.exception.NoValidConstructorException;
 import com.di.glue.context.exception.NotASuperclassException;
 import com.di.glue.context.util.LogUtils;
 import org.apache.log4j.Logger;
 
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Parameter;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 /**
  * Class used to contain all binding objects for SINGLETON and NAMED PROXY types.
@@ -20,55 +25,68 @@ public class DefaultBinder implements Binder {
 
     static final Logger log = Logger.getLogger(DefaultBinder.class);
 
-    private MultiMap<TypeUnit, ImplUnit, Object> beanMap;
+    private MultiMap<Class<?>, BindIdentifier, ImplUnit> beanMap;
 
     public DefaultBinder() {
         beanMap = new HashMultiMap<>();
     }
 
     @Override
-    public void bind(TypeUnit typeUnit, ImplUnit implUnit) throws NotASuperclassException {
-        if(typeUnit == null || typeUnit.getClazz() == null)
-            throw new IllegalArgumentException("TypeUnit to be binded is/contains null.");
-        if(implUnit == null || implUnit.getClazz() == null || implUnit.getScope() == null)
-            throw new IllegalArgumentException("ImplUnit to be binded is/contains null.");
+    public void bind(Class<?> abstr, Class<?> impl, Scope scope, String qualifier) throws NotASuperclassException {
+        if(abstr == null)
+            throw new IllegalArgumentException("Abstraction to be binded is null.");
+        if(impl == null)
+            throw new IllegalArgumentException("Abstraction to be binded is null.");
 
         try {
-            beanMap.put(typeUnit, implUnit, null);
+            beanMap.put(abstr, BindIdentifier.of(scope, qualifier), ImplUnit.of(impl, null));
         } catch (DuplicateEntryException e) {
             log.error(e.getMessage());
         }
     }
 
     // must be called after all the binds have been added
+    // creates all singleton instances
     @Override
     public void init() {
-        for(MultiMapEntry<TypeUnit, ImplUnit, Object> entry : beanMap.entrySet()) {
+        for(MultiMapEntry<Class<?>, BindIdentifier, ImplUnit> entry : beanMap.entrySet()) {
             if(entry.getSubKey().getScope() == Scope.SINGLETON)
-                createSingletonInstance(entry);
+                getBean(entry.getKey(), entry.getSubKey().getScope(), entry.getSubKey().getQualifier());
         }
     }
 
-    //todo: multiple bindings
-    //todo: entry pair to string
-    private void createSingletonInstance(MultiMapEntry<TypeUnit, ImplUnit, Object> entry) {
+    public Object getBean(Class<?> clazz) {
+        return getBean(clazz, null, null);
+    }
+
+    public Object getBean(Class<?> clazz, Scope scope, String qualifier) {
+        Object result = null;
         try {
-            if(entry.getSubKey().getScope() == Scope.SINGLETON) {
-                if(entry.getValue() == null){
-                    beanMap.getSubmap(entry.getKey()).put(entry.getSubKey(), createNewObject(entry));
-                } else {
-                    log.info("Object for:" + LogUtils.getSimpleBindingString(entry) + "already exists.");
+            if(scope == null)
+                scope = Scope.SINGLETON;
+            if(beanMap.containsKey(clazz)) {
+                Map<BindIdentifier,ImplUnit> subMap = beanMap.getSubmap(clazz);
+                BindIdentifier bindIdentifier = BindIdentifier.of(scope, qualifier);
+                if(subMap.containsKey(bindIdentifier)) {
+                    if(scope == Scope.SINGLETON) {
+                        result = subMap.get(bindIdentifier).getInstance();
+                        if(result == null) {
+                            Class<?> implClazz = subMap.get(bindIdentifier).getImplClazz();
+                            result = createNewObject(implClazz);
+                            subMap.put(bindIdentifier, ImplUnit.of(implClazz, result));
+                        }
+                    } else {
+                        result = createNewObject(subMap.get(bindIdentifier).getImplClazz());
+                    }
                 }
+            } else {
+                log.info("Bean does not exist: " + clazz.getSimpleName());
             }
         } catch (IllegalAccessException|InstantiationException e) {
             e.printStackTrace();
         }
-    }
 
-    // todo: overloaded versions
-    public Object getBean(Class<?> clazz) {
-
-        return null;
+        return result;
     }
 
     // gets the bindName=null, qualifier=null instance
@@ -78,14 +96,14 @@ public class DefaultBinder implements Binder {
         return null;
     }
 
-    private Object createNewObject(MultiMapEntry<TypeUnit, ImplUnit, Object> entry) throws InstantiationException, IllegalAccessException {
-        InjectionType injectionType = getInjectionType(entry.getSubKey().getClazz());
+    private Object createNewObject(Class<?> clazz) throws InstantiationException, IllegalAccessException {
+        InjectionType injectionType = getInjectionType(clazz);
         if(injectionType == InjectionType.CONSTRUCTOR){
-            return createNewObjectByConstructor(entry);
+            return createNewObjectByConstructor(clazz);
         } else if(injectionType == InjectionType.FIELD) {
-            return createNewObjectByFields(entry);
+            return createNewObjectByFields(clazz);
         } else {
-            return createNewObjectDefault(entry);
+            return createNewObjectDefault(clazz);
         }
     }
 
@@ -103,45 +121,78 @@ public class DefaultBinder implements Binder {
         return InjectionType.NONE;
     }
 
-    private Object createNewObjectByConstructor(MultiMapEntry<TypeUnit, ImplUnit, Object> entry) {
-        log.info("Creating new object by constructor injection: " + entry.getSubKey().getClazz());
+    private Object createNewObjectByConstructor(Class<?> clazz) {
+        log.info("Creating new object by constructor injection: " + clazz);
         Object object = null;
-        Class<?> clazz = entry.getSubKey().getClazz();
         Constructor<?>[] constructors = clazz.getConstructors();
         Constructor<?> constr = null;
+        // find constructor and check if multiple constructors have @Inject
         for(int i=0; i<constructors.length; i++) {
-            if(constructors[i].isAnnotationPresent(Inject.class))
+            if(constructors[i].isAnnotationPresent(Inject.class)) {
+                if(constr != null) throw new MultipleConstructorsWithInjectException(clazz);
                 constr = constructors[i];
-        }
-        for(Class<?> param : constr.getParameterTypes()) {
-            if(param.isAnnotationPresent(GlueBean.class)) {
-                //search the map
-
-
-//                beanMap.containsKey(TypeUnit.of())
-                //create new obj
             }
         }
-        return object;
+
+        List<Object> paramInstancesList = new ArrayList<>();
+        for(Class<?> param : constr.getParameterTypes()) {
+            paramInstancesList.add(getBean(param));
+        }
+        return createObjectByConstrAndParams(constr, paramInstancesList);
     }
 
-    private Object createNewObjectByFields(MultiMapEntry<TypeUnit, ImplUnit, Object> entry) {
-        log.info("Creating new object by field injection: " + entry.getSubKey().getClazz());
+    private Object createNewObjectByFields(Class<?> clazz) {
+        log.info("Creating new object by field injection: " + clazz);
         Object object = null;
-        Class<?> clazz = entry.getSubKey().getClazz();
-        //todo
+        Field[] fields = clazz.getFields();
+        List<Class> annotatedFields = new ArrayList<>();
+        //find annotated fields
+        for( Field field : fields) {
+            if(field.getType().isAnnotationPresent(Inject.class)) {
+                annotatedFields.add(field.getType());
+            }
+        }
+        //find constructor that only contains the annontated fields
+        Constructor<?>[] constructors = clazz.getConstructors();
+        List<Class> constrFields = new ArrayList<>();
+        Constructor<?> constr = null;
+        for(Constructor<?> constructor : constructors) {
+            if(constructor.getParameterCount() == annotatedFields.size()){
+                for(Parameter field : constructor.getParameters()) {
+                    constrFields.add(field.getType());
+                }
+            }
+            if(constrFields.equals(annotatedFields)) {
+                constr = constructor;
+            }
+        }
 
-        return object;
+        if(constr == null) throw new NoValidConstructorException(clazz);
+        List<Object> paramInstancesList = new ArrayList<>();
+        for(Class<?> param : constr.getParameterTypes()) {
+            paramInstancesList.add(getBean(param));
+        }
+
+        return createObjectByConstrAndParams(constr, paramInstancesList);
     }
 
-    private Object createNewObjectDefault(MultiMapEntry<TypeUnit, ImplUnit, Object> entry) throws IllegalAccessException, InstantiationException {
-        log.info("Creating new object (no injection): " + entry.getSubKey().getClazz());
-        Class<?> clazz = entry.getSubKey().getClazz();
+    private Object createNewObjectDefault(Class<?> clazz) throws IllegalAccessException, InstantiationException {
+        log.info("Creating new object (no injection): " + clazz);
         return clazz.newInstance();
     }
 
+    private Object createObjectByConstrAndParams(Constructor<?> constructor, List<Object> paramInstancesList) {
+        Object object = null;
+        try {
+            object = constructor.newInstance(paramInstancesList.toArray());
+        } catch (InstantiationException|IllegalAccessException|InvocationTargetException e) {
+            e.printStackTrace();
+        }
+        return object;
+    }
+
     @Override
-    public List<MultiMapEntry<TypeUnit, ImplUnit, Object>> getBindings() {
+    public List<MultiMapEntry<Class<?>, BindIdentifier, ImplUnit>> getBindings() {
         return beanMap.getEntries();
     }
 

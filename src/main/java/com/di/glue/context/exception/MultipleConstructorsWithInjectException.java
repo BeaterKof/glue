@@ -4,9 +4,9 @@ import java.lang.reflect.Constructor;
 
 public class MultipleConstructorsWithInjectException extends RuntimeException {
 
-    private static final String MSG = "Multiple @Inject annotations found for constructor constructor: %s";
+    private static final String MSG = "Multiple constructors with @Inject annotations on found for class: %s";
 
-    public MultipleConstructorsWithInjectException(Constructor<?> constructor) {
-        super(String.format(MSG, constructor.getName()));
+    public MultipleConstructorsWithInjectException(Class<?> clazz) {
+        super(String.format(MSG, clazz.getSimpleName()));
     }
 }

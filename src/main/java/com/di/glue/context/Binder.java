@@ -1,16 +1,19 @@
 package com.di.glue.context;
 
 import com.di.glue.context.data.*;
-import com.di.glue.context.exception.NotASuperclassException;
 
 import java.util.List;
 
 public interface Binder {
 
-    void bind(TypeUnit typeUnit, ImplUnit name);
+    void bind(Class<?> abstr, Class<?> impl, Scope scope, String qualifier);
 
-    List<MultiMapEntry<TypeUnit, ImplUnit, Object>> getBindings();
+    List<MultiMapEntry<Class<?>, BindIdentifier, ImplUnit>> getBindings();
 
     void init();
+
+    Object getBean(Class<?> clazz);
+
+    Object getBean(Class<?> clazz, Scope scope, String qualifier);
 
 }
