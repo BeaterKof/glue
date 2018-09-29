@@ -19,6 +19,7 @@ public class DefaultBindingConfigurer implements BindingConfigurer{
 
     @Override
     public void addBinding(Class<?> clazz, Class<?> clazz2, String name, Scope scope) {
+        if(clazz==null || clazz2==null) throw new IllegalArgumentException();
         bindings.add(BindingUnit.of(clazz, clazz2, name, null, scope));
     }
 

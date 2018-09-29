@@ -40,13 +40,11 @@ public class BindIdentifier {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
         BindIdentifier implUnit = (BindIdentifier) o;
-        return scope == implUnit.scope &&
-                Objects.equals(qualifier, implUnit.qualifier);
+        return (scope == implUnit.scope) && (Objects.equals(qualifier, implUnit.qualifier));
     }
 
     @Override
     public int hashCode() {
-
         return Objects.hash(scope, qualifier);
     }
 

@@ -36,7 +36,7 @@ public class DefaultBinder implements Binder {
         if(abstr == null)
             throw new IllegalArgumentException("Abstraction to be binded is null.");
         if(impl == null)
-            throw new IllegalArgumentException("Abstraction to be binded is null.");
+            throw new IllegalArgumentException("Implementation to be binded is null.");
 
         try {
             beanMap.put(abstr, BindIdentifier.of(scope, qualifier), ImplUnit.of(impl, null));
@@ -108,12 +108,12 @@ public class DefaultBinder implements Binder {
     }
 
     private InjectionType getInjectionType(Class<?> clazz) {
-        Constructor<?>[] constructors = clazz.getConstructors();
+        Constructor<?>[] constructors = clazz.getDeclaredConstructors();
         for(int i=0; i<constructors.length; i++) {
             if(constructors[i].isAnnotationPresent(Inject.class))
                 return InjectionType.CONSTRUCTOR;
         }
-        Field[] fields = clazz.getFields();
+        Field[] fields = clazz.getDeclaredFields();
         for(int i=0; i<fields.length; i++) {
             if(fields[i].isAnnotationPresent(Inject.class))
                 return InjectionType.FIELD;
@@ -124,7 +124,7 @@ public class DefaultBinder implements Binder {
     private Object createNewObjectByConstructor(Class<?> clazz) {
         log.info("Creating new object by constructor injection: " + clazz);
         Object object = null;
-        Constructor<?>[] constructors = clazz.getConstructors();
+        Constructor<?>[] constructors = clazz.getDeclaredConstructors();
         Constructor<?> constr = null;
         // find constructor and check if multiple constructors have @Inject
         for(int i=0; i<constructors.length; i++) {
@@ -144,29 +144,29 @@ public class DefaultBinder implements Binder {
     private Object createNewObjectByFields(Class<?> clazz) {
         log.info("Creating new object by field injection: " + clazz);
         Object object = null;
-        Field[] fields = clazz.getFields();
+        Field[] fields = clazz.getDeclaredFields();
         List<Class> annotatedFields = new ArrayList<>();
         //find annotated fields
         for( Field field : fields) {
-            if(field.getType().isAnnotationPresent(Inject.class)) {
+            if(field.isAnnotationPresent(Inject.class)) {
                 annotatedFields.add(field.getType());
             }
         }
         //find constructor that only contains the annontated fields
-        Constructor<?>[] constructors = clazz.getConstructors();
-        List<Class> constrFields = new ArrayList<>();
+        Constructor<?>[] constructors = clazz.getDeclaredConstructors();
+        List<Class> constrFields = null;
         Constructor<?> constr = null;
         for(Constructor<?> constructor : constructors) {
             if(constructor.getParameterCount() == annotatedFields.size()){
+                constrFields = new ArrayList<>();
                 for(Parameter field : constructor.getParameters()) {
                     constrFields.add(field.getType());
                 }
-            }
-            if(constrFields.equals(annotatedFields)) {
-                constr = constructor;
+                if(constrFields.size()!=0 && constrFields.equals(annotatedFields)) {
+                    constr = constructor;
+                }
             }
         }
-
         if(constr == null) throw new NoValidConstructorException(clazz);
         List<Object> paramInstancesList = new ArrayList<>();
         for(Class<?> param : constr.getParameterTypes()) {
@@ -184,7 +184,8 @@ public class DefaultBinder implements Binder {
     private Object createObjectByConstrAndParams(Constructor<?> constructor, List<Object> paramInstancesList) {
         Object object = null;
         try {
-            object = constructor.newInstance(paramInstancesList.toArray());
+            Object[] paramsArray = paramInstancesList.toArray();
+            object = constructor.newInstance(paramsArray);
         } catch (InstantiationException|IllegalAccessException|InvocationTargetException e) {
             e.printStackTrace();
         }
