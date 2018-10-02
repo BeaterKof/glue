@@ -8,11 +8,10 @@ import com.di.glue.context.exception.NoValidConstructorException;
 import com.di.glue.context.exception.NotASuperclassException;
 import com.di.glue.context.util.LogUtils;
 import org.apache.log4j.Logger;
+import org.reflections.ReflectionUtils;
+import sun.reflect.generics.reflectiveObjects.ParameterizedTypeImpl;
 
-import java.lang.reflect.Constructor;
-import java.lang.reflect.Field;
-import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Parameter;
+import java.lang.reflect.*;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -51,19 +50,25 @@ public class DefaultBinder implements Binder {
     public void init() {
         for(MultiMapEntry<Class<?>, BindIdentifier, ImplUnit> entry : beanMap.entrySet()) {
             if(entry.getSubKey().getScope() == Scope.SINGLETON)
-                getBean(entry.getKey(), entry.getSubKey().getScope(), entry.getSubKey().getQualifier());
+                getBean(entry.getKey(), entry.getSubKey().getScope(), entry.getSubKey().getQualifier(), null);
         }
     }
 
     public Object getBean(Class<?> clazz) {
-        return getBean(clazz, null, null);
+        return getBean(clazz, null, null, null);
     }
 
-    public Object getBean(Class<?> clazz, Scope scope, String qualifier) {
+    private Object getBean(Class<?> clazz, Type genericType) {
+        return getBean(clazz, null, null, genericType);
+    }
+
+    public Object getBean(Class<?> clazz, Scope scope, String qualifier, Type genericType) {
         Object result = null;
         try {
             if(scope == null)
                 scope = Scope.SINGLETON;
+            if(clazz.isAssignableFrom(List.class))
+                return getListBeans(genericType);
             if(beanMap.containsKey(clazz)) {
                 Map<BindIdentifier,ImplUnit> subMap = beanMap.getSubmap(clazz);
                 BindIdentifier bindIdentifier = BindIdentifier.of(scope, qualifier);
@@ -87,6 +92,30 @@ public class DefaultBinder implements Binder {
         }
 
         return result;
+    }
+
+    public Object getListBeans(Type genericType) throws IllegalAccessException, InstantiationException {
+
+        if(genericType == null) throw new RuntimeException("List has no generic type defined.");
+
+        ParameterizedTypeImpl generic = null;
+        if(genericType instanceof ParameterizedTypeImpl)
+            generic = (ParameterizedTypeImpl)genericType;
+
+        List<Object> listBeans = new ArrayList<>();
+        if(generic != null) {
+            Class<?> genClass = (Class<?>) generic.getActualTypeArguments()[0];
+            if(beanMap.containsKey(genClass)) {
+                Map<BindIdentifier,ImplUnit> subMap = beanMap.getSubmap(genClass);
+                for(ImplUnit implUnit : subMap.values()) {
+                    if(implUnit.getInstance() != null)
+                        listBeans.add(implUnit.getInstance());
+                    else
+                        listBeans.add(createNewObject(implUnit.getImplClazz()));
+                }
+            }
+        }
+        return listBeans;
     }
 
     // gets the bindName=null, qualifier=null instance
@@ -135,8 +164,12 @@ public class DefaultBinder implements Binder {
         }
 
         List<Object> paramInstancesList = new ArrayList<>();
-        for(Class<?> param : constr.getParameterTypes()) {
-            paramInstancesList.add(getBean(param));
+        if(constr != null) {
+            Class<?>[] fieldClass = constr.getParameterTypes();
+            Type[] fieldGeneric = constr.getGenericParameterTypes();
+            for(int i=0; i < fieldClass.length; i++) {
+                paramInstancesList.add(getBean(fieldClass[i], fieldGeneric[i]));
+            }
         }
         return createObjectByConstrAndParams(constr, paramInstancesList);
     }
@@ -159,8 +192,8 @@ public class DefaultBinder implements Binder {
         for(Constructor<?> constructor : constructors) {
             if(constructor.getParameterCount() == annotatedFields.size()){
                 constrFields = new ArrayList<>();
-                for(Parameter field : constructor.getParameters()) {
-                    constrFields.add(field.getType());
+                for(Class<?> field : constructor.getParameterTypes()) {
+                    constrFields.add(field);
                 }
                 if(constrFields.size()!=0 && constrFields.equals(annotatedFields)) {
                     constr = constructor;
@@ -169,8 +202,11 @@ public class DefaultBinder implements Binder {
         }
         if(constr == null) throw new NoValidConstructorException(clazz);
         List<Object> paramInstancesList = new ArrayList<>();
-        for(Class<?> param : constr.getParameterTypes()) {
-            paramInstancesList.add(getBean(param));
+
+        Class<?>[] fieldClass = constr.getParameterTypes();
+        Type[] fieldGeneric = constr.getGenericParameterTypes();
+        for(int i=0; i < fieldClass.length; i++) {
+            paramInstancesList.add(getBean(fieldClass[i], fieldGeneric[i]));
         }
 
         return createObjectByConstrAndParams(constr, paramInstancesList);

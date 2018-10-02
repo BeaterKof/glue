@@ -87,12 +87,13 @@ public class GlueApplicationTest {
     }
 
     @Test
-    public void specialCasesTest_1() {
+    public void specialCasesTest_Lists() {
 
         appContext = new GlueApplicationContext(bindingConfigurer, true);
         appContext.logBindings();
 
-        
+        ListTest_1 result = (ListTest_1) appContext.getBean(ListTest_1.class);
+        Assert.assertTrue(result.getList().size() == 3);
 
     }
 

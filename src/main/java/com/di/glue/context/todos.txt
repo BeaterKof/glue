@@ -4,3 +4,5 @@
 -> multithread
 
 -> check if classes only have one constructor annotated with @Inject
+
+-> circular dependency

@@ -69,10 +69,9 @@ public class GlueApplicationContext implements ApplicationContext {
             throw new IllegalArgumentException("Configurer passed to GlueApplicationContext is null.");
         configurer.getBindings()
                 .forEach(item -> {
-                    // todo:
                     binder.bind(item.getAbstraction(), item.getImplementation(), item.getScope(), item.getName());
                 });
-        // wait for bindings to end
+        //todo: chech if necessary wait for bindings to end
         try {
             Thread.sleep(500);
         } catch (InterruptedException e) {
@@ -93,11 +92,11 @@ public class GlueApplicationContext implements ApplicationContext {
     }
 
     public Object getBean(Class<?> clazz, Scope scope) {
-        return binder.getBean(clazz, scope, null);
+        return binder.getBean(clazz, scope, null, null);
     }
 
     public Object getBean(Class<?> clazz, Scope scope, String qualifier) {
-        return binder.getBean(clazz, scope, qualifier);
+        return binder.getBean(clazz, scope, qualifier, null);
     }
 
     public boolean isAnnotationScanEnabled() {

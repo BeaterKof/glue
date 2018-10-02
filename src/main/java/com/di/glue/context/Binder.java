@@ -2,6 +2,7 @@ package com.di.glue.context;
 
 import com.di.glue.context.data.*;
 
+import java.lang.reflect.Type;
 import java.util.List;
 
 public interface Binder {
@@ -14,6 +15,6 @@ public interface Binder {
 
     Object getBean(Class<?> clazz);
 
-    Object getBean(Class<?> clazz, Scope scope, String qualifier);
+    Object getBean(Class<?> clazz, Scope scope, String qualifier, Type genericType);
 
 }
