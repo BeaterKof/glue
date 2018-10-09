@@ -1,20 +1,19 @@
 package com.di.glue.context;
 
 import com.di.glue.context.annotation.Inject;
+import com.di.glue.context.annotation.Prototype;
+import com.di.glue.context.annotation.Qualifier;
+import com.di.glue.context.annotation.Singleton;
 import com.di.glue.context.data.*;
-import com.di.glue.context.exception.DuplicateEntryException;
-import com.di.glue.context.exception.MultipleConstructorsWithInjectException;
-import com.di.glue.context.exception.NoValidConstructorException;
-import com.di.glue.context.exception.NotASuperclassException;
+import com.di.glue.context.exception.*;
 import com.di.glue.context.util.LogUtils;
 import org.apache.log4j.Logger;
 import org.reflections.ReflectionUtils;
 import sun.reflect.generics.reflectiveObjects.ParameterizedTypeImpl;
 
+import java.lang.annotation.Annotation;
 import java.lang.reflect.*;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 /**
  * Class used to contain all binding objects for SINGLETON and NAMED PROXY types.
@@ -22,6 +21,7 @@ import java.util.Map;
  */
 public class DefaultBinder implements Binder {
 
+    static final String ILLEGAL_BINDING = "Illegal binding for class: %s . The interface, its implementation and scope must be non null.";
     static final Logger log = Logger.getLogger(DefaultBinder.class);
 
     private MultiMap<Class<?>, BindIdentifier, ImplUnit> beanMap;
@@ -32,10 +32,8 @@ public class DefaultBinder implements Binder {
 
     @Override
     public void bind(Class<?> abstr, Class<?> impl, Scope scope, String qualifier) throws NotASuperclassException {
-        if(abstr == null)
-            throw new IllegalArgumentException("Abstraction to be binded is null.");
-        if(impl == null)
-            throw new IllegalArgumentException("Implementation to be binded is null.");
+        if(abstr == null || impl == null || scope == null)
+            throw new IllegalArgumentException(String.format(ILLEGAL_BINDING, abstr));
 
         try {
             beanMap.put(abstr, BindIdentifier.of(scope, qualifier), ImplUnit.of(impl, null));
@@ -45,37 +43,44 @@ public class DefaultBinder implements Binder {
     }
 
     // must be called after all the binds have been added
-    // creates all singleton instances
+    // creates all singleton instances and adds them into the beanMap
     @Override
     public void init() {
         for(MultiMapEntry<Class<?>, BindIdentifier, ImplUnit> entry : beanMap.entrySet()) {
-            if(entry.getSubKey().getScope() == Scope.SINGLETON)
-                getBean(entry.getKey(), entry.getSubKey().getScope(), entry.getSubKey().getQualifier(), null);
+            Scope scope = entry.getSubKey().getScope();
+            if(scope == Scope.SINGLETON)
+                getBean(entry.getKey(), scope, entry.getSubKey().getQualifier(), null);
         }
     }
 
-    public Object getBean(Class<?> clazz) {
-        return getBean(clazz, null, null, null);
-    }
+    // default scope is Singleton
+    public Object getBean(Class<?> clazz) { return getBean(clazz, Scope.SINGLETON, null, null); }
+
+    public Object getBean(Class<?> clazz, Scope scope) { return getBean(clazz, scope, null, null); }
 
     private Object getBean(Class<?> clazz, Type genericType) {
         return getBean(clazz, null, null, genericType);
     }
 
+    public Object getBean(Class<?> clazz, Scope scope, String qualifier) {
+        return getBean(clazz, scope, qualifier, null);
+    }
+
     public Object getBean(Class<?> clazz, Scope scope, String qualifier, Type genericType) {
+        if(scope == null)
+            scope = Scope.SINGLETON;
+        if(clazz == null)
+            throw new IllegalArgumentException("Class is null.");
+
         Object result = null;
         try {
-            if(scope == null)
-                scope = Scope.SINGLETON;
-            if(clazz.isAssignableFrom(List.class))
-                return getListBeans(genericType);
             if(beanMap.containsKey(clazz)) {
                 Map<BindIdentifier,ImplUnit> subMap = beanMap.getSubmap(clazz);
                 BindIdentifier bindIdentifier = BindIdentifier.of(scope, qualifier);
                 if(subMap.containsKey(bindIdentifier)) {
                     if(scope == Scope.SINGLETON) {
                         result = subMap.get(bindIdentifier).getInstance();
-                        if(result == null) {
+                        if (result == null) {
                             Class<?> implClazz = subMap.get(bindIdentifier).getImplClazz();
                             result = createNewObject(implClazz);
                             subMap.put(bindIdentifier, ImplUnit.of(implClazz, result));
@@ -84,6 +89,8 @@ public class DefaultBinder implements Binder {
                         result = createNewObject(subMap.get(bindIdentifier).getImplClazz());
                     }
                 }
+            } else if(clazz.isAssignableFrom(List.class)) {
+                return getListBeans(genericType);
             } else {
                 log.info("Bean does not exist: " + clazz.getSimpleName());
             }
@@ -94,7 +101,7 @@ public class DefaultBinder implements Binder {
         return result;
     }
 
-    public Object getListBeans(Type genericType) throws IllegalAccessException, InstantiationException {
+    private Object getListBeans(Type genericType) throws IllegalAccessException, InstantiationException {
 
         if(genericType == null) throw new RuntimeException("List has no generic type defined.");
 
@@ -113,16 +120,11 @@ public class DefaultBinder implements Binder {
                     else
                         listBeans.add(createNewObject(implUnit.getImplClazz()));
                 }
+            } else {
+                throw new NotABeanException(genClass, " - during list binding.");
             }
         }
         return listBeans;
-    }
-
-    // gets the bindName=null, qualifier=null instance
-    private Object getDefaultSingletonInstance(Class<?> clazz) {
-        TypeUnit typeUnit = TypeUnit.of(clazz, null);
-        // get submap for typeUnit, check if it has less than
-        return null;
     }
 
     private Object createNewObject(Class<?> clazz) throws InstantiationException, IllegalAccessException {
@@ -167,9 +169,26 @@ public class DefaultBinder implements Binder {
         if(constr != null) {
             Class<?>[] fieldClass = constr.getParameterTypes();
             Type[] fieldGeneric = constr.getGenericParameterTypes();
+            Annotation[][] annot = constr.getParameterAnnotations();
             for(int i=0; i < fieldClass.length; i++) {
-                paramInstancesList.add(getBean(fieldClass[i], fieldGeneric[i]));
+                // default scope is Singleton
+                Scope scope = Scope.SINGLETON;
+                String qualifier = null;
+                Annotation[] fieldAnnotations = annot[i];
+
+                for(Annotation a : fieldAnnotations) {
+                    if(a instanceof Prototype)
+                        scope = Scope.PROTOTYPE;
+                    else if(a instanceof Qualifier) {
+                        Qualifier q = (Qualifier) a;
+                        qualifier = q.name();
+                    }
+                }
+
+                paramInstancesList.add(getBean(fieldClass[i], scope, qualifier, fieldGeneric[i]));
             }
+        } else {
+            throw new RuntimeException("No constructor annotated with @Inject for class: " + clazz.getSimpleName());
         }
         return createObjectByConstrAndParams(constr, paramInstancesList);
     }
@@ -179,15 +198,26 @@ public class DefaultBinder implements Binder {
         Object object = null;
         Field[] fields = clazz.getDeclaredFields();
         List<Class> annotatedFields = new ArrayList<>();
+        List<Annotation[]> annotations = new ArrayList<>();
+
         //find annotated fields
         for( Field field : fields) {
             if(field.isAnnotationPresent(Inject.class)) {
                 annotatedFields.add(field.getType());
+                Annotation annotation_1 = field.getAnnotation(Singleton.class);
+                if(annotation_1 == null)
+                    annotation_1 = field.getAnnotation(Prototype.class);
+                Annotation annotation_2 = field.getAnnotation(Qualifier.class);
+
+                Annotation[] fieldAnnotations = new Annotation[2];
+                fieldAnnotations[0] = annotation_1;
+                fieldAnnotations[1] = annotation_2;
+                annotations.add(fieldAnnotations);
             }
         }
         //find constructor that only contains the annontated fields
         Constructor<?>[] constructors = clazz.getDeclaredConstructors();
-        List<Class> constrFields = null;
+        List<Class<?>> constrFields = null;
         Constructor<?> constr = null;
         for(Constructor<?> constructor : constructors) {
             if(constructor.getParameterCount() == annotatedFields.size()){
@@ -206,7 +236,18 @@ public class DefaultBinder implements Binder {
         Class<?>[] fieldClass = constr.getParameterTypes();
         Type[] fieldGeneric = constr.getGenericParameterTypes();
         for(int i=0; i < fieldClass.length; i++) {
-            paramInstancesList.add(getBean(fieldClass[i], fieldGeneric[i]));
+            Scope scope = Scope.SINGLETON;
+            String qualifier = null;
+            for(Annotation a : annotations.get(i)) {
+                if(a instanceof Prototype)
+                    scope = Scope.PROTOTYPE;
+                else if(a instanceof Qualifier) {
+                    Qualifier q = (Qualifier) a;
+                    qualifier = q.name();
+                }
+            }
+
+            paramInstancesList.add(getBean(fieldClass[i], scope, qualifier, fieldGeneric[i]));
         }
 
         return createObjectByConstrAndParams(constr, paramInstancesList);

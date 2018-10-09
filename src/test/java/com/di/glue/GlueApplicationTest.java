@@ -68,6 +68,14 @@ public class GlueApplicationTest {
     }
 
     @Test
+    public void getIsNotBindedTest() {
+        appContext = new GlueApplicationContext(bindingConfigurer, true);
+        appContext.logBindings();
+
+        Assert.assertNotNull(appContext.getBean(ExampleNotBinded.class));
+    }
+
+    @Test
     public void complexClassesTest_1() {
 
         appContext = new GlueApplicationContext(bindingConfigurer, true);
@@ -93,7 +101,19 @@ public class GlueApplicationTest {
         appContext.logBindings();
 
         ListTest_1 result = (ListTest_1) appContext.getBean(ListTest_1.class);
-        Assert.assertTrue(result.getList().size() == 3);
+        Assert.assertNotNull(result);
+        Assert.assertEquals(result.getList().size(), 3);
+
+    }
+
+    @Test
+    public void specialCasesTest_SingProtFields() {
+
+        appContext = new GlueApplicationContext(bindingConfigurer, true);
+        appContext.logBindings();
+
+        Complex result = (Complex) appContext.getBean(Complex.class, Scope.PROTOTYPE);
+        Assert.assertNotNull(result);
 
     }
 
@@ -102,6 +122,7 @@ public class GlueApplicationTest {
     0. Basic test
     - bind null values
     - bind interf to null / impl to null
+    - get bind of class that is not binded
 
     1. Simple classes
     - bind singleton twice, bind prototype twice, bind singleton and prototype to same interface
@@ -116,6 +137,7 @@ public class GlueApplicationTest {
 
     3. Special cases
     - bind lists
+    - inject singleton/prototype and by qualifier
     - bind circular dependency
      */
 }

@@ -11,7 +11,6 @@ public class DefaultBindingConfigurer implements BindingConfigurer{
         bindings = new ArrayList<>();
     }
 
-    //TODO: method chaining
     @Override
     public void addBinding(Class<?> clazz, Class<?> clazz2, java.lang.String name, String beanType, Scope scope) {
         bindings.add(BindingUnit.of(clazz, clazz2, name, beanType, scope));
@@ -26,4 +25,5 @@ public class DefaultBindingConfigurer implements BindingConfigurer{
     public List<BindingUnit> getBindings() {
         return new ArrayList<>(bindings);
     }
+
 }

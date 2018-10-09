@@ -8,7 +8,6 @@ public class TypeUnit {
     // interface to be binded
     private Class clazz;
     // field used for multiple binding to the same interface
-    // todo multiple binding
     @Nullable
     private String bindName;
 

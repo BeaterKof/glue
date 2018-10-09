@@ -15,6 +15,8 @@ public interface Binder {
 
     Object getBean(Class<?> clazz);
 
-    Object getBean(Class<?> clazz, Scope scope, String qualifier, Type genericType);
+    Object getBean(Class<?> clazz, Scope scope);
+
+    Object getBean(Class<?> clazz, Scope scope, String qualifier);
 
 }

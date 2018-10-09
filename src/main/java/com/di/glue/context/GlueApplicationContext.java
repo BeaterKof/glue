@@ -87,16 +87,19 @@ public class GlueApplicationContext implements ApplicationContext {
         this.binder = binder;
     }
 
+    @Override
     public Object getBean(Class<?> clazz) {
         return binder.getBean(clazz);
     }
 
+    @Override
     public Object getBean(Class<?> clazz, Scope scope) {
-        return binder.getBean(clazz, scope, null, null);
+        return binder.getBean(clazz, scope);
     }
 
+    @Override
     public Object getBean(Class<?> clazz, Scope scope, String qualifier) {
-        return binder.getBean(clazz, scope, qualifier, null);
+        return binder.getBean(clazz, scope, qualifier);
     }
 
     public boolean isAnnotationScanEnabled() {

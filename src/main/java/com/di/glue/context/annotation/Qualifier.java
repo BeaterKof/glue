@@ -10,7 +10,7 @@ import java.lang.annotation.Target;
  * date: 24.09.2018
  **/
 @Retention(RetentionPolicy.RUNTIME)
-@Target({ElementType.TYPE})
+@Target({ElementType.TYPE, ElementType.PARAMETER, ElementType.FIELD})
 public @interface Qualifier {
     String name() default "";
 }
