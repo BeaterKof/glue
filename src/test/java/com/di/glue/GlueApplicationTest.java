@@ -4,7 +4,9 @@ import com.di.glue.context.GlueApplicationContext;
 import com.di.glue.context.data.BindingConfigurer;
 import com.di.glue.context.data.DefaultBindingConfigurer;
 import com.di.glue.context.data.Scope;
+import com.di.glue.context.exception.CircularBindingException;
 import com.di.glue.test_classes.*;
+import com.di.glue.test_classes.circular_dependency.Circular;
 import org.apache.log4j.Logger;
 import org.junit.Assert;
 import org.junit.Before;
@@ -114,7 +116,16 @@ public class GlueApplicationTest {
 
         Complex result = (Complex) appContext.getBean(Complex.class, Scope.PROTOTYPE);
         Assert.assertNotNull(result);
+    }
 
+    @Test(expected = CircularBindingException.class)
+    public void specialCasesTest_circularDependency() {
+
+        appContext = new GlueApplicationContext(bindingConfigurer, true);
+        appContext.logBindings();
+
+        Circular result = (Circular) appContext.getBean(Circular.class, Scope.SINGLETON);
+        Assert.assertNotNull(result);
     }
 
     /*

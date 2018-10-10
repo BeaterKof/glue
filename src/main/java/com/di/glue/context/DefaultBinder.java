@@ -26,6 +26,10 @@ public class DefaultBinder implements Binder {
 
     private MultiMap<Class<?>, BindIdentifier, ImplUnit> beanMap;
 
+    // bean stack used to avoid circular binding
+    private static Set<Class<?>> beanStack = new HashSet<>();
+    private static int stackCounter = 0;
+
     public DefaultBinder() {
         beanMap = new HashMultiMap<>();
     }
@@ -71,6 +75,12 @@ public class DefaultBinder implements Binder {
             scope = Scope.SINGLETON;
         if(clazz == null)
             throw new IllegalArgumentException("Class is null.");
+        // circular check
+        if(stackCounter == 0) beanStack.clear();
+        else if(beanStack.contains(clazz)) throw new CircularBindingException(clazz);
+        // increment circular
+        beanStack.add(clazz);
+        stackCounter++;
 
         Object result = null;
         try {
@@ -90,13 +100,16 @@ public class DefaultBinder implements Binder {
                     }
                 }
             } else if(clazz.isAssignableFrom(List.class)) {
-                return getListBeans(genericType);
+                result = getListBeans(genericType);
             } else {
                 log.info("Bean does not exist: " + clazz.getSimpleName());
             }
         } catch (IllegalAccessException|InstantiationException e) {
             e.printStackTrace();
         }
+
+        // decrease circular counter
+        stackCounter--;
 
         return result;
     }
