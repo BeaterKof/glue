@@ -1,4 +1,4 @@
-package com.di.glue.test_classes;
+package com.di.glue.test_classes.complex.simple;
 
 import com.di.glue.context.annotation.GlueBean;
 

@@ -28,7 +28,7 @@ public class DefaultBinder implements Binder {
 
     // bean stack used to avoid circular binding
     private static Set<Class<?>> beanStack = new HashSet<>();
-    private static int stackCounter = 0;
+    private static boolean listTrigger = false;
 
     public DefaultBinder() {
         beanMap = new HashMultiMap<>();
@@ -52,8 +52,9 @@ public class DefaultBinder implements Binder {
     public void init() {
         for(MultiMapEntry<Class<?>, BindIdentifier, ImplUnit> entry : beanMap.entrySet()) {
             Scope scope = entry.getSubKey().getScope();
-            if(scope == Scope.SINGLETON)
+            if(scope == Scope.SINGLETON) {
                 getBean(entry.getKey(), scope, entry.getSubKey().getQualifier(), null);
+            }
         }
     }
 
@@ -71,16 +72,25 @@ public class DefaultBinder implements Binder {
     }
 
     public Object getBean(Class<?> clazz, Scope scope, String qualifier, Type genericType) {
+        log.info("---> " + beanStack.size() + " Entering getBean for class: " + clazz);
+
         if(scope == null)
             scope = Scope.SINGLETON;
         if(clazz == null)
             throw new IllegalArgumentException("Class is null.");
-        // circular check
-        if(stackCounter == 0) beanStack.clear();
-        else if(beanStack.contains(clazz)) throw new CircularBindingException(clazz);
-        // increment circular
-        beanStack.add(clazz);
-        stackCounter++;
+
+        if(!listTrigger) {
+            // circular check
+            if(beanStack.contains(clazz)) {
+                log.error("CircularBindingException is thrown for: " + clazz.getSimpleName());
+                log.info("Cleaning class stack for testing porpuses...");
+                beanStack.clear();
+                throw new CircularBindingException(clazz);
+            }
+
+            // increment circular
+            beanStack.add(clazz);
+        }
 
         Object result = null;
         try {
@@ -100,7 +110,9 @@ public class DefaultBinder implements Binder {
                     }
                 }
             } else if(clazz.isAssignableFrom(List.class)) {
+                listTrigger = true;
                 result = getListBeans(genericType);
+                listTrigger = false;
             } else {
                 log.info("Bean does not exist: " + clazz.getSimpleName());
             }
@@ -108,8 +120,10 @@ public class DefaultBinder implements Binder {
             e.printStackTrace();
         }
 
-        // decrease circular counter
-        stackCounter--;
+        // remove class from stack
+        beanStack.remove(clazz);
+
+        log.info("<--- " + beanStack.size() + " Exiting getBean for class: " + clazz);
 
         return result;
     }

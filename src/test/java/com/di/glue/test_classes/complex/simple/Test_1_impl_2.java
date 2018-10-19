@@ -1,8 +1,7 @@
-package com.di.glue.test_classes;
+package com.di.glue.test_classes.complex.simple;
 
 import com.di.glue.context.annotation.Component;
 import com.di.glue.context.annotation.Prototype;
-import com.di.glue.context.annotation.Qualifier;
 
 /**
  * created by: andrei
@@ -10,6 +9,5 @@ import com.di.glue.context.annotation.Qualifier;
  **/
 @Component
 @Prototype
-@Qualifier(name = "test1_impl3")
-public class Test_1_impl_3 implements Test_1{
+public class Test_1_impl_2 implements Test_1 {
 }

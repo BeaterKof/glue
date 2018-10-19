@@ -1,6 +1,9 @@
-package com.di.glue.test_classes;
+package com.di.glue.test_classes.complex;
 
 import com.di.glue.context.annotation.*;
+import com.di.glue.test_classes.complex.simple.Test_1;
+import com.di.glue.test_classes.complex.simple.Test_2;
+import com.di.glue.test_classes.complex.simple.Test_3;
 
 /**
  * created by: andrei

@@ -1,8 +1,11 @@
 
--> remove name param for SINGLETON binding
+!!! -> when running all tests, the logger shows the same output multiple times:
 
--> multithread
+454 [main] INFO com.di.glue.context.DefaultBinder  - ---> 0 Entering getBean for class: interface com.di.glue.test_classes.complex.simple.Test_1
+454 [main] INFO com.di.glue.context.DefaultBinder  - ---> 0 Entering getBean for class: interface com.di.glue.test_classes.complex.simple.Test_1
+454 [main] INFO com.di.glue.context.DefaultBinder  - ---> 0 Entering getBean for class: interface com.di.glue.test_classes.complex.simple.Test_1
+454 [main] INFO com.di.glue.context.DefaultBinder  - <--- 0 Exiting getBean for class: interface com.di.glue.test_classes.complex.simple.Test_1
+454 [main] INFO com.di.glue.context.DefaultBinder  - <--- 0 Exiting getBean for class: interface com.di.glue.test_classes.complex.simple.Test_1
+454 [main] INFO com.di.glue.context.DefaultBinder  - <--- 0 Exiting getBean for class: interface com.di.glue.test_classes.complex.simple.Test_1
 
 -> check if classes only have one constructor annotated with @Inject
-
--> circular dependency

@@ -3,7 +3,6 @@ package com.di.glue.test_classes.circular_dependency;
 import com.di.glue.context.annotation.Component;
 import com.di.glue.context.annotation.Inject;
 import com.di.glue.context.annotation.Singleton;
-import com.di.glue.test_classes.Test_1;
 
 /**
  * created by: andrei

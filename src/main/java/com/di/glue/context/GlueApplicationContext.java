@@ -6,31 +6,29 @@ import com.di.glue.context.util.LogUtils;
 import org.apache.log4j.BasicConfigurator;
 import org.apache.log4j.Logger;
 import org.reflections.Reflections;
-import org.reflections.scanners.FieldAnnotationsScanner;
 
-import java.lang.reflect.Field;
 import java.util.Set;
-import java.util.stream.Collectors;
 
 public class GlueApplicationContext implements ApplicationContext {
 
     private static final Logger log = Logger.getLogger(GlueApplicationContext.class);
-    //todo: beautify config
-    private static final String ROOT_PATH = "com";
 
     private Binder binder;
+    private String rootPath;
     private BindingConfigurer configurer;
     private boolean annotationScanEnabled;
 
     public GlueApplicationContext() {
         binder = new DefaultBinder();
+        this.rootPath = "com";
         annotationScanEnabled = true;
         BindingConfigurer configurer = new DefaultBindingConfigurer();
         initContext();
     }
 
-    public GlueApplicationContext(BindingConfigurer externalConfigurer, boolean annotationScanEnabled) {
+    public GlueApplicationContext(BindingConfigurer externalConfigurer, String rootPath, boolean annotationScanEnabled) {
         if(externalConfigurer==null) throw new IllegalArgumentException();
+        this.rootPath = rootPath;
         this.annotationScanEnabled = annotationScanEnabled;
         BasicConfigurator.configure();
         this.binder = new DefaultBinder();
@@ -45,10 +43,10 @@ public class GlueApplicationContext implements ApplicationContext {
     }
 
     private void scanForAnnotatedClasses() {
-        Reflections refInterfaces = new Reflections(ROOT_PATH);
+        Reflections refInterfaces = new Reflections(rootPath);
         Set<Class<?>> allInterfaces = refInterfaces.getTypesAnnotatedWith(GlueBean.class, true);
 
-        Reflections refComponents = new Reflections(ROOT_PATH);
+        Reflections refComponents = new Reflections(rootPath);
         Set<Class<?>> componentClasses = refComponents.getTypesAnnotatedWith(Component.class);
 
         BindingConfigurer configurer = new DefaultBindingConfigurer();
@@ -71,9 +69,8 @@ public class GlueApplicationContext implements ApplicationContext {
                 .forEach(item -> {
                     binder.bind(item.getAbstraction(), item.getImplementation(), item.getScope(), item.getName());
                 });
-        //todo: chech if necessary wait for bindings to end
         try {
-            Thread.sleep(500);
+            Thread.sleep(200);
         } catch (InterruptedException e) {
             e.printStackTrace();
         }
@@ -108,6 +105,10 @@ public class GlueApplicationContext implements ApplicationContext {
 
     public void setAnnotationScanEnabled(boolean annotationScanEnabled) {
         this.annotationScanEnabled = annotationScanEnabled;
+    }
+
+    public String getRootPath() {
+        return this.rootPath;
     }
 
     @Override

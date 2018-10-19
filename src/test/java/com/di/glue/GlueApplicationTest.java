@@ -5,20 +5,45 @@ import com.di.glue.context.data.BindingConfigurer;
 import com.di.glue.context.data.DefaultBindingConfigurer;
 import com.di.glue.context.data.Scope;
 import com.di.glue.context.exception.CircularBindingException;
-import com.di.glue.test_classes.*;
 import com.di.glue.test_classes.circular_dependency.Circular;
-import org.apache.log4j.Logger;
+import com.di.glue.test_classes.complex.Complex;
+import com.di.glue.test_classes.complex.simple.*;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
-import org.junit.rules.ExpectedException;
 import org.junit.runner.RunWith;
 import org.mockito.junit.MockitoJUnitRunner;
+
+    /*
+    Tests:
+    0. Basic test
+    - bind null values
+    - bind interf to null / impl to null
+    - get bind of class that is not binded
+
+    1. Simple classes
+    - bind singleton twice, bind prototype twice, bind singleton and prototype to same interface
+    - get bindings twice for each and test if they are the same
+    - bind singleton and prototype by qualifier
+
+    2. Complex classes
+    - bind classes with one dependency that can be created via a new
+    - bind classes with one dep that is marked with annot to a singleton
+    - bind classes with one dep that is marked with annot to a prototype
+    - bind classes with multiple dep that is marked with annot to a singleton/prot and first lever is also annot
+
+    3. Special cases
+    - bind lists
+    - inject singleton/prototype and by qualifier
+    - bind circular dependency
+     */
 
 @RunWith(MockitoJUnitRunner.class)
 public class GlueApplicationTest {
 
-    Logger log = Logger.getLogger(GlueApplicationTest.class);
+    public static final String SIMPLE_PATH = "com.di.glue.test_classes.complex.simple";
+    public static final String COMPLEX_PATH = "com.di.glue.test_classes.complex";
+    public static final String CIRCULAR_PATH = "com.di.glue.test_classes.circular_dependency";
     GlueApplicationContext appContext;
     BindingConfigurer bindingConfigurer;
 
@@ -49,7 +74,7 @@ public class GlueApplicationTest {
         bindingConfigurer.addBinding(Simple.class, SimpleImpl_1.class, "Simple_prototype_1", Scope.PROTOTYPE);
         bindingConfigurer.addBinding(Example.class, ExampleImpl_1.class, "Example_singleton_1", Scope.PROTOTYPE);
 
-        appContext = new GlueApplicationContext(bindingConfigurer, true);
+        appContext = new GlueApplicationContext(bindingConfigurer, SIMPLE_PATH, true);
         appContext.logBindings();
 
         Object simple_1 = appContext.getBean(Simple.class);
@@ -71,16 +96,16 @@ public class GlueApplicationTest {
 
     @Test
     public void getIsNotBindedTest() {
-        appContext = new GlueApplicationContext(bindingConfigurer, true);
+        appContext = new GlueApplicationContext(bindingConfigurer, SIMPLE_PATH, true);
         appContext.logBindings();
 
-        Assert.assertNotNull(appContext.getBean(ExampleNotBinded.class));
+        Assert.assertNull(appContext.getBean(ExampleNotBinded.class));
     }
 
     @Test
     public void complexClassesTest_1() {
 
-        appContext = new GlueApplicationContext(bindingConfigurer, true);
+        appContext = new GlueApplicationContext(bindingConfigurer, SIMPLE_PATH, true);
         appContext.logBindings();
 
         //test multiple inheritance singletons
@@ -99,7 +124,7 @@ public class GlueApplicationTest {
     @Test
     public void specialCasesTest_Lists() {
 
-        appContext = new GlueApplicationContext(bindingConfigurer, true);
+        appContext = new GlueApplicationContext(bindingConfigurer, SIMPLE_PATH, true);
         appContext.logBindings();
 
         ListTest_1 result = (ListTest_1) appContext.getBean(ListTest_1.class);
@@ -111,7 +136,7 @@ public class GlueApplicationTest {
     @Test
     public void specialCasesTest_SingProtFields() {
 
-        appContext = new GlueApplicationContext(bindingConfigurer, true);
+        appContext = new GlueApplicationContext(bindingConfigurer, COMPLEX_PATH, true);
         appContext.logBindings();
 
         Complex result = (Complex) appContext.getBean(Complex.class, Scope.PROTOTYPE);
@@ -121,34 +146,11 @@ public class GlueApplicationTest {
     @Test(expected = CircularBindingException.class)
     public void specialCasesTest_circularDependency() {
 
-        appContext = new GlueApplicationContext(bindingConfigurer, true);
+        appContext = new GlueApplicationContext(bindingConfigurer, CIRCULAR_PATH, true);
         appContext.logBindings();
 
         Circular result = (Circular) appContext.getBean(Circular.class, Scope.SINGLETON);
         Assert.assertNotNull(result);
     }
 
-    /*
-    Tests:
-    0. Basic test
-    - bind null values
-    - bind interf to null / impl to null
-    - get bind of class that is not binded
-
-    1. Simple classes
-    - bind singleton twice, bind prototype twice, bind singleton and prototype to same interface
-    - get bindings twice for each and test if they are the same
-    - bind singleton and prototype by qualifier
-
-    2. Complex classes
-    - bind classes with one dependency that can be created via a new
-    - bind classes with one dep that is marked with annot to a singleton
-    - bind classes with one dep that is marked with annot to a prototype
-    - bind classes with multiple dep that is marked with annot to a singleton/prot and first lever is also annot
-
-    3. Special cases
-    - bind lists
-    - inject singleton/prototype and by qualifier
-    - bind circular dependency
-     */
 }
