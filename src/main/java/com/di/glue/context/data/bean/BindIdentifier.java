@@ -1,4 +1,6 @@
-package com.di.glue.context.data;
+package com.di.glue.context.data.bean;
+
+import com.di.glue.context.data.Scope;
 
 import java.util.Objects;
 

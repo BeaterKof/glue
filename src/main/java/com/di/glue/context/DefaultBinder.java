@@ -5,10 +5,11 @@ import com.di.glue.context.annotation.Prototype;
 import com.di.glue.context.annotation.Qualifier;
 import com.di.glue.context.annotation.Singleton;
 import com.di.glue.context.data.*;
+import com.di.glue.context.data.bean.BindIdentifier;
+import com.di.glue.context.data.bean.ImplUnit;
+import com.di.glue.context.data.bean.ImplUnitSingleton;
 import com.di.glue.context.exception.*;
-import com.di.glue.context.util.LogUtils;
 import org.apache.log4j.Logger;
-import org.reflections.ReflectionUtils;
 import sun.reflect.generics.reflectiveObjects.ParameterizedTypeImpl;
 
 import java.lang.annotation.Annotation;
@@ -38,9 +39,8 @@ public class DefaultBinder implements Binder {
     public void bind(Class<?> abstr, Class<?> impl, Scope scope, String qualifier) throws NotASuperclassException {
         if(abstr == null || impl == null || scope == null)
             throw new IllegalArgumentException(String.format(ILLEGAL_BINDING, abstr));
-
         try {
-            beanMap.put(abstr, BindIdentifier.of(scope, qualifier), ImplUnit.of(impl, null));
+            beanMap.put(abstr, BindIdentifier.of(scope, qualifier), (ImplUnit) ImplUnitSingleton.of(impl, null));
         } catch (DuplicateEntryException e) {
             log.error(e.getMessage());
         }
@@ -99,11 +99,12 @@ public class DefaultBinder implements Binder {
                 BindIdentifier bindIdentifier = BindIdentifier.of(scope, qualifier);
                 if(subMap.containsKey(bindIdentifier)) {
                     if(scope == Scope.SINGLETON) {
-                        result = subMap.get(bindIdentifier).getInstance();
+                        ImplUnitSingleton singletonImplUnit = (ImplUnitSingleton) subMap.get(bindIdentifier);
+                        result = singletonImplUnit.getInstance();
                         if (result == null) {
                             Class<?> implClazz = subMap.get(bindIdentifier).getImplClazz();
-                            result = createNewObject(implClazz);
-                            subMap.put(bindIdentifier, ImplUnit.of(implClazz, result));
+                            result = createNewObject(implClazz); // TODO: make this a bean factory
+                            subMap.put(bindIdentifier, (ImplUnit) ImplUnitSingleton.of(implClazz, result)); // TODO: ?????
                         }
                     } else {
                         result = createNewObject(subMap.get(bindIdentifier).getImplClazz());
@@ -142,10 +143,10 @@ public class DefaultBinder implements Binder {
             if(beanMap.containsKey(genClass)) {
                 Map<BindIdentifier,ImplUnit> subMap = beanMap.getSubmap(genClass);
                 for(ImplUnit implUnit : subMap.values()) {
-                    if(implUnit.getInstance() != null)
-                        listBeans.add(implUnit.getInstance());
+                    if(implUnit instanceof ImplUnitSingleton)
+                        listBeans.add(((ImplUnitSingleton)implUnit).getInstance());
                     else
-                        listBeans.add(createNewObject(implUnit.getImplClazz()));
+                        listBeans.add(createNewObject(implUnit.getImplClazz()));  //TODO: factory
                 }
             } else {
                 throw new NotABeanException(genClass, " - during list binding.");

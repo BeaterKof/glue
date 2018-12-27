@@ -1,16 +1,17 @@
-package com.di.glue.context.data;
+package com.di.glue.context.data.bean;
 
 import java.util.Objects;
 
 /**
  * created by: andrei
- * date: 02.09.2018
+ * date: 27.12.2018
  **/
-public class ImplUnit {
+public class ImplUnitSingleton implements ImplUnit {
+
     private Class<?> implClazz;
     private Object instance;
 
-    private ImplUnit(Class<?> implClazz, Object instance) {
+    private ImplUnitSingleton(Class<?> implClazz, Object instance) {
         this.implClazz = implClazz;
         this.instance = instance;
     }
@@ -31,15 +32,15 @@ public class ImplUnit {
         this.instance = instance;
     }
 
-    public static ImplUnit of(Class<?> implClazz, Object instance) {
-        return new ImplUnit(implClazz, instance);
+    public static ImplUnitSingleton of(Class<?> implClazz, Object instance) {
+        return new ImplUnitSingleton(implClazz, instance);
     }
 
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
-        ImplUnit implUnit = (ImplUnit) o;
+        ImplUnitSingleton implUnit = (ImplUnitSingleton) o;
         return Objects.equals(implClazz, implUnit.implClazz) &&
                 Objects.equals(instance, implUnit.instance);
     }

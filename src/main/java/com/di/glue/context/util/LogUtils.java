@@ -1,9 +1,8 @@
 package com.di.glue.context.util;
 
-import com.di.glue.context.data.BindIdentifier;
-import com.di.glue.context.data.ImplUnit;
+import com.di.glue.context.data.bean.BindIdentifier;
+import com.di.glue.context.data.bean.ImplUnit;
 import com.di.glue.context.data.MultiMapEntry;
-import com.di.glue.context.data.TypeUnit;
 
 public class LogUtils {
 
