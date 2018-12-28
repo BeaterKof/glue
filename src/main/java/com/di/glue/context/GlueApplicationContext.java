@@ -13,13 +13,25 @@ public class GlueApplicationContext implements ApplicationContext {
 
     private static final Logger log = Logger.getLogger(GlueApplicationContext.class);
 
-    private Binder binder;
+    private BeanFactory beanFactory;
     private String rootPath;
     private BindingConfigurer configurer;
     private boolean annotationScanEnabled;
 
     public GlueApplicationContext() {
-        binder = new DefaultBinder();
+        beanFactory = new DefaultBeanFactory();
+        this.rootPath = "com";
+        annotationScanEnabled = true;
+        BindingConfigurer configurer = new DefaultBindingConfigurer();
+        initContext();
+    }
+
+    public GlueApplicationContext(Class beanFactory) {
+        try {
+            this.beanFactory = (BeanFactory) beanFactory.newInstance();
+        } catch (InstantiationException | IllegalAccessException e) {
+            e.printStackTrace();
+        }
         this.rootPath = "com";
         annotationScanEnabled = true;
         BindingConfigurer configurer = new DefaultBindingConfigurer();
@@ -31,7 +43,7 @@ public class GlueApplicationContext implements ApplicationContext {
         this.rootPath = rootPath;
         this.annotationScanEnabled = annotationScanEnabled;
         BasicConfigurator.configure();
-        this.binder = new DefaultBinder();
+        this.beanFactory = new DefaultBeanFactory();
         this.configurer = externalConfigurer;
         initContext();
     }
@@ -39,7 +51,7 @@ public class GlueApplicationContext implements ApplicationContext {
     private void initContext() {
         if(annotationScanEnabled) scanForAnnotatedClasses();
         addConfigurer(this.configurer);
-        binder.init();
+        beanFactory.init();
     }
 
     private void scanForAnnotatedClasses() {
@@ -51,14 +63,22 @@ public class GlueApplicationContext implements ApplicationContext {
 
         BindingConfigurer configurer = new DefaultBindingConfigurer();
         for(Class<?> interf : allInterfaces) {
-            for(Class<?> componentClass : componentClasses) {
-                if(interf.isAssignableFrom(componentClass)) {
-                    Scope scope = componentClass.isAnnotationPresent(Singleton.class) ? Scope.SINGLETON : Scope.PROTOTYPE;
-                    String qualifier = componentClass.isAnnotationPresent(Qualifier.class) ?
-                            componentClass.getDeclaredAnnotation(Qualifier.class).name() : null;
-                    binder.bind(interf, componentClass, scope, qualifier);
-                }
-            }
+            findAndBindAllAnnotatedClasses(componentClasses, interf);
+        }
+    }
+
+    private void findAndBindAllAnnotatedClasses(Set<Class<?>> componentClasses, Class<?> interf) {
+        for(Class<?> componentClass : componentClasses) {
+            bindAnnotatedClass(interf, componentClass);
+        }
+    }
+
+    private void bindAnnotatedClass(Class<?> interf, Class<?> componentClass) {
+        if(interf.isAssignableFrom(componentClass)) {
+            Scope scope = componentClass.isAnnotationPresent(Singleton.class) ? Scope.SINGLETON : Scope.PROTOTYPE;
+            String qualifier = componentClass.isAnnotationPresent(Qualifier.class) ?
+                    componentClass.getDeclaredAnnotation(Qualifier.class).name() : null;
+            beanFactory.bind(interf, componentClass, scope, qualifier);
         }
     }
 
@@ -67,7 +87,7 @@ public class GlueApplicationContext implements ApplicationContext {
             throw new IllegalArgumentException("Configurer passed to GlueApplicationContext is null.");
         configurer.getBindings()
                 .forEach(item -> {
-                    binder.bind(item.getAbstraction(), item.getImplementation(), item.getScope(), item.getName());
+                    beanFactory.bind(item.getAbstraction(), item.getImplementation(), item.getScope(), item.getName());
                 });
         try {
             Thread.sleep(200);
@@ -76,27 +96,27 @@ public class GlueApplicationContext implements ApplicationContext {
         }
     }
 
-    public Binder getBinder() {
-        return binder;
+    private BeanFactory getBeanFactory() {
+        return beanFactory;
     }
 
-    public void setBinder(Binder binder) {
-        this.binder = binder;
+    public void setDefaultBeanFactory(DefaultBeanFactory defaultBeanFactory) {
+        this.beanFactory = defaultBeanFactory;
     }
 
     @Override
     public Object getBean(Class<?> clazz) {
-        return binder.getBean(clazz);
+        return beanFactory.getBean(clazz);
     }
 
     @Override
     public Object getBean(Class<?> clazz, Scope scope) {
-        return binder.getBean(clazz, scope);
+        return beanFactory.getBean(clazz, scope);
     }
 
     @Override
     public Object getBean(Class<?> clazz, Scope scope, String qualifier) {
-        return binder.getBean(clazz, scope, qualifier);
+        return beanFactory.getBean(clazz, scope, qualifier);
     }
 
     public boolean isAnnotationScanEnabled() {
@@ -114,7 +134,6 @@ public class GlueApplicationContext implements ApplicationContext {
     @Override
     public void logBindings() {
         log.info("\n\nLOGGING BINDINGS:\n");
-        this.getBinder().getBindings().stream()
-                .forEach(e -> log.info(LogUtils.getComplexBindingString(e)));
+        this.getBeanFactory().getBindings().forEach(e -> log.info(LogUtils.getComplexBindingString(e)));
     }
 }
