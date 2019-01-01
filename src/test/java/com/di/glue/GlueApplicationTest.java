@@ -8,6 +8,7 @@ import com.di.glue.context.exception.CircularBindingException;
 import com.di.glue.test_classes.circular_dependency.Circular;
 import com.di.glue.test_classes.complex.Complex;
 import com.di.glue.test_classes.complex.simple.*;
+import org.apache.log4j.Logger;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
@@ -46,10 +47,15 @@ public class GlueApplicationTest {
     public static final String CIRCULAR_PATH = "com.di.glue.test_classes.circular_dependency";
     GlueApplicationContext appContext;
     BindingConfigurer bindingConfigurer;
+    private final Logger log = Logger.getLogger(GlueApplicationTest.class);
 
     @Before
-    public void init() {
+    public void init() throws InterruptedException {
         bindingConfigurer = new DefaultBindingConfigurer();
+    }
+
+    private void logTestInfo(String methodName) {
+        log.info("\n\n Entering method: " + methodName);
     }
 
     @Test(expected = IllegalArgumentException.class)
@@ -64,6 +70,7 @@ public class GlueApplicationTest {
 
     @Test
     public void simpleClassesTest() {
+        logTestInfo("simpleClassesTest");
         //two singletons of same interface
         bindingConfigurer.addBinding(Simple.class, SimpleImpl_1.class, null, null);
         bindingConfigurer.addBinding(Simple.class, SimpleImpl_1.class, null, Scope.SINGLETON);
@@ -96,6 +103,7 @@ public class GlueApplicationTest {
 
     @Test
     public void getIsNotBindedTest() {
+        logTestInfo("getIsNotBindedTest");
         appContext = new GlueApplicationContext(bindingConfigurer, SIMPLE_PATH, true);
         appContext.logBindings();
 
@@ -104,7 +112,7 @@ public class GlueApplicationTest {
 
     @Test
     public void complexClassesTest_1() {
-
+        logTestInfo("complexClassesTest_1");
         appContext = new GlueApplicationContext(bindingConfigurer, SIMPLE_PATH, true);
         appContext.logBindings();
 
@@ -123,7 +131,7 @@ public class GlueApplicationTest {
 
     @Test
     public void specialCasesTest_Lists() {
-
+        logTestInfo("specialCasesTest_Lists");
         appContext = new GlueApplicationContext(bindingConfigurer, SIMPLE_PATH, true);
         appContext.logBindings();
 
@@ -135,7 +143,7 @@ public class GlueApplicationTest {
 
     @Test
     public void specialCasesTest_SingProtFields() {
-
+        logTestInfo("specialCasesTest_SingProtFields");
         appContext = new GlueApplicationContext(bindingConfigurer, COMPLEX_PATH, true);
         appContext.logBindings();
 
@@ -145,7 +153,7 @@ public class GlueApplicationTest {
 
     @Test(expected = CircularBindingException.class)
     public void specialCasesTest_circularDependency() {
-
+        logTestInfo("specialCasesTest_circularDependency");
         appContext = new GlueApplicationContext(bindingConfigurer, CIRCULAR_PATH, true);
         appContext.logBindings();
 
